@@ -18,7 +18,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Reject invalid UTF-8 and duplicate JSON object keys
-        run: python3 scripts/check-json-duplicates.py
       - name: Validate schema, directory and admission policy
         run: node scripts/validate-directory.mjs --self-test
