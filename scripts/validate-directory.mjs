@@ -3,12 +3,7 @@ import { pathToFileURL } from 'node:url';
 
 const maxBytes = 1024 * 1024;
 const maxEntries = 256;
-const reserved = new Map([
-  ['frilcraft', 'frilcraft'],
-  ['frilassets', 'frilassets'],
-  ['frilremotion', 'frilremotion'],
-  ['frilstudio', 'frilstudio'],
-]);
+const officialNamespacePrefix = 'fril';
 const entryKeys = [
   'description', 'displayName', 'id', 'manifestSha256', 'publisher', 'registryUrl',
   'repository', 'review', 'reviewedRevision', 'status', 'tier',
@@ -72,9 +67,9 @@ function validateDirectory(value) {
     assert(entry.publisher === `github:${owner}`, 'publisher does not match repository owner');
     validateUrl(entry.registryUrl, owner, repo, entry.reviewedRevision);
     if (entry.tier === 'official') {
-      assert(reserved.get(entry.id) === repo && owner === 'FrilLab', 'official entry does not match reserved FrilLab identity');
+      assert(owner === 'FrilLab' && entry.id.startsWith(officialNamespacePrefix) && repo.toLowerCase() === entry.id, 'official entry must use its matching FrilLab repository and namespace');
     } else {
-      assert(!reserved.has(entry.id) && owner !== 'FrilLab', 'community entry claims reserved or official identity');
+      assert(!entry.id.startsWith(officialNamespacePrefix) && owner !== 'FrilLab', 'community entry claims the FrilLab namespace or ownership');
     }
     assert(!ids.has(entry.id), `duplicate registry ID: ${entry.id}`);
     assert(!urls.has(entry.registryUrl), `duplicate registry URL: ${entry.registryUrl}`);
@@ -88,10 +83,20 @@ function validateDirectory(value) {
 
 async function validateFile() {
   const bytes = await readFile(new URL('../registries.json', import.meta.url));
-  assert(bytes.byteLength <= maxBytes, 'registries.json exceeds the byte limit');
-  validateDirectory(JSON.parse(bytes.toString('utf8')));
+  validateDirectoryBytes(bytes);
   const schema = JSON.parse(await readFile(new URL('../schema.json', import.meta.url), 'utf8'));
   assert(schema.$schema === 'https://json-schema.org/draft/2020-12/schema' && schema.properties.schemaVersion.const === 1, 'schema.json is not the expected directory schema');
+}
+
+export function validateDirectoryBytes(bytes) {
+  assert(bytes.byteLength <= maxBytes, 'registries.json exceeds the byte limit');
+  let value;
+  try {
+    value = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
+  } catch {
+    throw new Error('registries.json is not valid UTF-8 JSON');
+  }
+  validateDirectory(value);
 }
 
 function sample(overrides = {}) {
@@ -111,12 +116,20 @@ function sample(overrides = {}) {
 function selfTest() {
   validateDirectory({ schemaVersion: 1, registries: [] });
   validateDirectory(sample());
+  const futureOfficial = sample();
+  const futureEntry = futureOfficial.registries[0];
+  futureEntry.id = 'frilphysics';
+  futureEntry.repository = 'https://github.com/FrilLab/frilphysics';
+  futureEntry.registryUrl = `https://raw.githubusercontent.com/FrilLab/frilphysics/${futureEntry.reviewedRevision}/registry.json`;
+  validateDirectory(futureOfficial);
   for (const invalid of [
     { ...sample(), arbitraryUrl: 'http://127.0.0.1/' },
     sample({ tier: 'community' }),
     sample({ registryUrl: 'https://raw.githubusercontent.com/other/repo/main/registry.json' }),
     sample({ registryUrl: 'https://raw.githubusercontent.com/FrilLab/frilcraft/0123456789abcdef0123456789abcdef01234567/%2e%2e/secret' }),
     sample({ review: { reviewedAt: '2026-02-29T00:00:00Z', reviewer: 'maintainer', notes: 'x' } }),
+    sample({ id: 'frilphysics', tier: 'community' }),
+    sample({ id: 'frilphysics', repository: 'https://github.com/FrilLab/other' }),
   ]) {
     let rejected = false;
     try { validateDirectory(invalid); } catch { rejected = true; }

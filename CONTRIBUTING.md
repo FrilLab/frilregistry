@@ -5,6 +5,7 @@ Anyone may propose an entry. A submission is not an approval, and validation che
 Include all of the following in the issue/PR:
 
 - Stable lower-case ID and requested tier.
+- Official IDs must start with `fril` and match the lower-case name of the FrilLab-owned source repository. Community IDs must not start with `fril` and cannot use a FrilLab-owned repository.
 - Proof that the publisher controls the source repository (for official entries, use the corresponding FrilLab-owned repository).
 - Canonical repository URL and a full immutable Git commit ID.
 - Registry manifest URL at that exact commit and SHA-256 of its exact bytes.
