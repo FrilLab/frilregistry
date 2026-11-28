@@ -1,4 +1,22 @@
 {
   "schemaVersion": 1,
-  "registries": []
+  "registries": [
+    {
+      "id": "frilcraft",
+      "displayName": "FrilCraft",
+      "description": "FrilCraft's reviewed component registry.",
+      "registryUrl": "https://raw.githubusercontent.com/FrilLab/frilcraft/a5e57a4cda0a12c4dcce906ea98d20a94f1346a5/registry.json",
+      "repository": "https://github.com/FrilLab/frilcraft",
+      "publisher": "github:FrilLab",
+      "tier": "official",
+      "status": "suspended",
+      "reviewedRevision": "a5e57a4cda0a12c4dcce906ea98d20a94f1346a5",
+      "manifestSha256": "963bbf8bdb7078921bc24bec1523e90d77a50e1b6f4489e44c841be0f581cc22",
+      "review": {
+        "reviewedAt": "2026-11-27T12:05:00Z",
+        "reviewer": "mors119",
+        "notes": "Preliminary provenance, manifest, path, hash, and source review only. FrilCraft CI's consumer installation check passed at this exact source revision. The entry remains suspended until a second FrilLab maintainer independently reviews and approves activation. Source uses React state and static Tailwind classes, imports cn, performs no network or process execution, and is MIT licensed; consumer dependencies are not installed by FrilAdd."
+      }
+    }
+  ]
 }
