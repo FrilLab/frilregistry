@@ -19,4 +19,6 @@ jobs:
         with:
           node-version: 22
       - name: Validate schema, directory and admission policy
-        run: node scripts/validate-directory.mjs --self-test
+        run: |
+          python3 scripts/check-json-duplicates.py --self-test registries.json schema.json
+          node scripts/validate-directory.mjs --self-test

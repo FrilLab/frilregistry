@@ -1,0 +1,10 @@
+{
+  "name": "@frillab/frilregistry-deployment",
+  "private": true,
+  "scripts": {
+    "build:static": "node scripts/build-static.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "4.168.0"
+  }
+}

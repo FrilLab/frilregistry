@@ -1,0 +1,58 @@
+name: Deploy static directory
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-directory
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: python3 scripts/check-json-duplicates.py --self-test registries.json schema.json
+      - run: node scripts/validate-directory.mjs
+      - run: npm ci
+      - run: npm run build:static
+
+  deploy:
+    needs: validate
+    runs-on: ubuntu-22.04
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build:static
+      - name: Deploy reviewed assets to the existing Worker
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          version_tag="gha-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          npx --no-install wrangler versions upload --strict --tag "$version_tag" --message "$GITHUB_SHA"
+          npx --no-install wrangler versions deploy --version-tag "$version_tag@100%" --message "$GITHUB_SHA" --yes
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Verify the public directory response
+        run: bash scripts/verify-deployment.sh dist/registries.json
